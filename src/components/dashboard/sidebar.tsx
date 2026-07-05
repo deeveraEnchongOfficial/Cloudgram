@@ -8,11 +8,10 @@ import { cn } from '@/lib/utils/cn';
 import { CreateFolderModal } from '@/components/dashboard/create-folder-modal';
 import { CloudgramLogo } from '@/components/cloudgram-logo';
 
-export function Sidebar() {
+export function Sidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobileOpen: (open: boolean) => void }) {
   const { folders, currentFolderId, setCurrentFolder } = useFolderStore();
   const setCurrentFolderFile = useFileStore((s) => s.setCurrentFolder);
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
 
   return (

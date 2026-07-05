@@ -40,7 +40,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      <Sidebar mobileOpen={mobileMenuOpen} setMobileOpen={setMobileMenuOpen} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Topbar
           onMobileMenu={() => setMobileMenuOpen(true)}

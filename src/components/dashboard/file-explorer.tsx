@@ -34,13 +34,16 @@ const LONG_PRESS_MS = 500;
 function useLongPress(onLongPress: () => void, onClick: () => void) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggeredRef = useRef(false);
+  const didHandleRef = useRef(false);
   const startPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const start = useCallback((e: React.PointerEvent) => {
     triggeredRef.current = false;
+    didHandleRef.current = false;
     startPosRef.current = { x: e.clientX, y: e.clientY };
     timerRef.current = setTimeout(() => {
       triggeredRef.current = true;
+      didHandleRef.current = true;
       onLongPress();
     }, LONG_PRESS_MS);
   }, [onLongPress]);
@@ -60,7 +63,8 @@ function useLongPress(onLongPress: () => void, onClick: () => void) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (!triggeredRef.current) {
+    if (!triggeredRef.current && !didHandleRef.current) {
+      didHandleRef.current = true;
       onClick();
     }
   }, [onClick]);
@@ -72,11 +76,23 @@ function useLongPress(onLongPress: () => void, onClick: () => void) {
     }
   }, []);
 
+  const clickFallback = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!didHandleRef.current) {
+      didHandleRef.current = true;
+      if (!triggeredRef.current) {
+        onClick();
+      }
+    }
+  }, [onClick]);
+
   return {
     onPointerDown: start,
     onPointerMove: move,
     onPointerUp: end,
     onPointerLeave: cancel,
+    onClick: clickFallback,
+    style: { touchAction: 'manipulation' } as React.CSSProperties,
   };
 }
 
