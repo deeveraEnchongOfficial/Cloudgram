@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  experimental: {
+    proxyClientMaxBodySize: '2gb',
+  },
 };
 
 export default withSecurityHeaders(nextConfig);

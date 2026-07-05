@@ -80,7 +80,7 @@ export const searchQuerySchema = z.object({
 });
 
 export const bulkOperationSchema = z.object({
-  operation: z.enum(['delete', 'move']),
+  operation: z.enum(['delete', 'move', 'download']),
   messageIds: z.array(z.number().int().positive()).min(1).max(100),
   targetFolderId: z.string().optional(),
 });

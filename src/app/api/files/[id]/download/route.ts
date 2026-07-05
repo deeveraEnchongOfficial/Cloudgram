@@ -35,30 +35,50 @@ export async function GET(
     const mimeType = getMimeType(message.media);
 
     const range = request.headers.get('range');
-    const { start, end } = parseRange(range, fileSize);
 
-    const stream = await createDownloadStream(
-      client,
-      message,
-      range ? start : undefined,
-      range ? end - start + 1 : undefined
-    );
+    if (fileSize > 0) {
+      const { start, end } = parseRange(range, fileSize);
 
-    await trackDownloadBytes(session.userId, end - start + 1);
+      const stream = await createDownloadStream(
+        client,
+        message,
+        range ? start : undefined,
+        range ? end - start + 1 : undefined
+      );
 
-    const headers = new Headers({
-      'Content-Type': mimeType,
-      'Accept-Ranges': 'bytes',
-      'Content-Length': (end - start + 1).toString(),
-      'Cache-Control': 'private, max-age=3600',
-    });
+      await trackDownloadBytes(session.userId, end - start + 1);
 
-    if (range) {
-      headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`);
-      return new Response(stream, { status: 206, headers });
+      const headers = new Headers({
+        'Content-Type': mimeType,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': (end - start + 1).toString(),
+        'Cache-Control': 'private, max-age=3600',
+      });
+
+      if (range) {
+        headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+        return new Response(stream, { status: 206, headers });
+      }
+
+      return new Response(stream, { status: 200, headers });
     }
 
-    return new Response(stream, { status: 200, headers });
+    // For photos and media with unknown size, download as buffer
+    const buffer = await client.downloadMedia(message);
+    if (!buffer) {
+      return Response.json({ success: false, error: 'Download failed' }, { status: 500 });
+    }
+
+    const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as unknown as ArrayBuffer);
+    await trackDownloadBytes(session.userId, buf.length);
+
+    return new Response(buf as any, {
+      status: 200,
+      headers: {
+        'Content-Type': mimeType,
+        'Cache-Control': 'private, max-age=3600',
+      },
+    });
   } catch (err: any) {
     if (err instanceof Response) return err;
     return Response.json({ success: false, error: err.message ?? 'Download failed' }, { status: 500 });

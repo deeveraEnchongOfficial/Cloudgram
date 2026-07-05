@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
 import { FileExplorer } from '@/components/dashboard/file-explorer';
 import { UploadProgress } from '@/components/dashboard/upload-progress';
+import { DownloadProgress } from '@/components/dashboard/download-progress';
 import { useFolderStore } from '@/stores/folder-store';
 import { useFileStore } from '@/stores/file-store';
 
@@ -49,6 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
       <UploadProgress />
+      <DownloadProgress />
     </div>
   );
 }
