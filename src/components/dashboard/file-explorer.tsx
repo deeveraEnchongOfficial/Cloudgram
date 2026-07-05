@@ -223,7 +223,13 @@ export function FileExplorer() {
       const params = new URLSearchParams({ folderId: currentFolderId, sortBy, sortOrder, limit: '100' });
       const res = await fetch(`/api/files?${params}`);
       const json = await res.json();
-      if (!json.success) throw new Error(json.error);
+      if (!json.success) {
+        if (json.code === 'SESSION_REVOKED') {
+          window.location.href = '/login?reason=session_expired';
+          return [];
+        }
+        throw new Error(json.error);
+      }
       return json.data as FileMetadata[];
     },
     enabled: !!currentFolderId,

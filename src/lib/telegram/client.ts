@@ -93,6 +93,23 @@ export function disconnectClient(userId: string): void {
   }
 }
 
+export function isSessionRevokedError(err: any): boolean {
+  const msg = err?.message ?? String(err);
+  return msg.includes('SESSION_REVOKED') || msg.includes('SESSION_EXPIRED') || msg.includes('AUTH_KEY_UNREGISTERED');
+}
+
+export async function clearSessionAndClient(userId: string): Promise<void> {
+  disconnectClient(userId);
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { sessionString: '' },
+    });
+  } catch {
+    // ignore
+  }
+}
+
 export async function createTempClient(
   apiId: number,
   apiHash: string,

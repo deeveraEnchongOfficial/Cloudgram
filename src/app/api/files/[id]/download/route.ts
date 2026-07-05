@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requireSession } from '@/lib/auth/session';
-import { getClient } from '@/lib/telegram/client';
+import { getClient, isSessionRevokedError, clearSessionAndClient } from '@/lib/telegram/client';
 import { resolvePeer } from '@/lib/telegram/folders';
 import { getFileSize, getMimeType } from '@/lib/telegram/files';
 import { createDownloadStream, parseRange } from '@/lib/telegram/streaming';
@@ -81,6 +81,11 @@ export async function GET(
     });
   } catch (err: any) {
     if (err instanceof Response) return err;
+    if (isSessionRevokedError(err)) {
+      const session = requireSession(request);
+      await clearSessionAndClient(session.userId);
+      return Response.json({ success: false, error: 'Telegram session expired. Please log in again.', code: 'SESSION_REVOKED' }, { status: 401 });
+    }
     return Response.json({ success: false, error: err.message ?? 'Download failed' }, { status: 500 });
   }
 }
