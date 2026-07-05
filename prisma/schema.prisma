@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users & Auth ──────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid()) @map("_id")
+  telegramId    Int      @unique
+  phoneNumber   String?
+  firstName     String?
+  lastName      String?
+  username      String?
+  apiId         Int
+  apiHash       String
+  sessionString String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  shares    Share[]
+  apiKeys   ApiKey[]
+  settings  UserSettings?
+  bandwidth BandwidthStat[]
+  folders   FolderMapping[]
+
+}
+
+model UserSettings {
+  id              String   @id @default(cuid()) @map("_id")
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Network settings
+  proxyEnabled    Boolean  @default(false)
+  proxyType       String   @default("socks5")
+  proxyHost       String   @default("")
+  proxyPort       Int      @default(1080)
+  proxyUsername   String   @default("")
+  proxyPassword   String   @default("")
+  proxySecret     String   @default("")
+
+  // VPN optimizer
+  vpnEnabled         Boolean @default(false)
+  timeoutMultiplier  Int     @default(3)
+  retryAttempts      Int     @default(3)
+  retryBaseBackoffMs Int     @default(1000)
+  retryMaxBackoffMs  Int     @default(30000)
+  adaptivePolling    Boolean @default(true)
+  pollingMinSec      Int     @default(15)
+  pollingMaxSec      Int     @default(60)
+  preferredDc        String  @default("auto")
+  dcFallbackAttempts Int     @default(2)
+  floodWaitRespect   Boolean @default(true)
+  peerCacheSize      Int     @default(500)
+  bandwidthLimitUpKbs   Int  @default(0)
+  bandwidthLimitDownKbs Int  @default(0)
+  chunkSizeKb        Int     @default(512)
+  keepAliveIntervalSec Int   @default(0)
+  autoDetectVpn      Boolean @default(false)
+
+  // UI settings
+  theme      String   @default("dark")
+  viewMode   String   @default("grid")
+  sortBy     String   @default("date")
+  sortOrder  String   @default("desc")
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ── Folder Mapping ────────────────────────────────────────
+
+model FolderMapping {
+  id              String   @id @default(cuid()) @map("_id")
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderName      String
+  channelUsername String?
+  channelId       String   @unique
+  accessHash      String
+  parentId        String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+// ── File Sharing ──────────────────────────────────────────
+
+model Share {
+  id               String    @id @default(cuid()) @map("_id")
+  token            String    @unique
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderMappingId  String?
+  messageId        Int
+  fileName         String
+  fileSize         Int       @default(0)
+  mimeType         String?
+
+  passwordHash     String?
+  passwordSalt     String?
+
+  expiresAt        DateTime?
+  revoked          Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+
+  downloadCount    Int       @default(0)
+  lastDownloadedAt DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ── API Keys ──────────────────────────────────────────────
+
+model ApiKey {
+  id         String    @id @default(cuid()) @map("_id")
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keyHash    String    @unique
+  keyPrefix  String
+  name       String    @default("Default")
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+
+  @@index([userId])
+}
+
+// ── Bandwidth Tracking ────────────────────────────────────
+
+model BandwidthStat {
+  id               String   @id @default(cuid()) @map("_id")
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             String
+  upBytes          Int      @default(0)
+  downBytes        Int      @default(0)
+  dailyLimitBytes  Int      @default(268435456000)
+
+  @@index([userId, date])
+}
+
+// ── Audit Log ─────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid()) @map("_id")
+  userId    String?
+  action    String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
