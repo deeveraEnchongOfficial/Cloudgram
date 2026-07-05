@@ -3,7 +3,7 @@ import { withSecurityHeaders } from "@/lib/security/headers";
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: __dirname,
+    root: process.cwd(),
   },
 };
 
